@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Navbar from '../components/Navbar';
 import { useAsyncStorage, useProductSearch, Product } from '@shopify/shop-minis-react';
-import { useClearProfileStorage } from '../hooks/clearProfileData';
 import { SwipeTab } from './tabs/SwipeTab';
+import { PopularTab } from './tabs/PopularTab';
+import { ProfileTab } from './tabs/ProfileTab';
+import { LikeTab } from './tabs/LikeTab';
+import { DislikeTab } from './tabs/DislikeTab';
 
 const CATEGORY_MAPPING: Record<string, string> = {
   "Clothing": "gid://shopify/TaxonomyCategory/aa-1",
@@ -21,21 +24,28 @@ const CATEGORY_MAPPING: Record<string, string> = {
 
 export default function MainPage() {
   const [currentTab, setCurrentTab] = useState('swiping');
-  const { clearProfileData } = useClearProfileStorage();
-  const { getItem } = useAsyncStorage();
+  const { getItem, setItem } = useAsyncStorage();
   const [gender, setGender] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
   const [isProfileReady, setIsProfileReady] = useState(false);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [likedProducts, setLikedProducts] = useState<Product[]>([]);
+  const [dislikedProducts, setDislikedProducts] = useState<Product[]>([]);
 
+  // Load initial data from storage
   useEffect(() => {
     const retrieveProfileData = async () => {
       try {
         const g = await getItem({ key: 'gender' });
         const c = await getItem({ key: 'categories' });
+        const liked = await getItem({ key: 'likedProducts' });
+        const disliked = await getItem({ key: 'dislikedProducts' });
+
         setGender(g ?? '');
         setCategories(c ? JSON.parse(c) : []);
+        setLikedProducts(liked ? JSON.parse(liked) : []);
+        setDislikedProducts(disliked ? JSON.parse(disliked) : []);
         setIsProfileReady(true);
       } catch (error) {
         console.error('Error retrieving profile data:', error);
@@ -44,6 +54,27 @@ export default function MainPage() {
 
     retrieveProfileData();
   }, []);
+
+  // Save liked/disliked products to storage whenever they change
+  useEffect(() => {
+    const saveProducts = async () => {
+      try {
+        await setItem({ key: 'likedProducts', value: JSON.stringify(likedProducts) });
+        await setItem({ key: 'dislikedProducts', value: JSON.stringify(dislikedProducts) });
+      } catch (error) {
+        console.error('Error saving products:', error);
+      }
+    };
+
+    saveProducts();
+  }, [likedProducts, dislikedProducts]);
+
+  // Get excluded product IDs (liked + disliked)
+  const excludedProductIds = useMemo(() => {
+    const likedIds = likedProducts.map(p => p.id);
+    const dislikedIds = dislikedProducts.map(p => p.id);
+    return new Set([...likedIds, ...dislikedIds]);
+  }, [likedProducts, dislikedProducts]);
 
   const getGenderFilter = (gender: string): 'MALE' | 'FEMALE' | 'NEUTRAL' | undefined => {
     switch (gender) {
@@ -74,15 +105,22 @@ export default function MainPage() {
     first: 20
   });
 
+  // Filter out excluded products after fetching
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    return products.filter(product => !excludedProductIds.has(product.id));
+  }, [products, excludedProductIds]);
+
+  // Handle product fetching and exclusion
   useEffect(() => {
-    if (products?.length) {
+    if (filteredProducts?.length) {
       setAllProducts(prev => {
         const existingIds = new Set(prev.map(p => p.id));
-        const newProducts = products.filter(p => !existingIds.has(p.id));
+        const newProducts = filteredProducts.filter(p => !existingIds.has(p.id));
         return [...prev, ...newProducts];
       });
     }
-  }, [products]);
+  }, [filteredProducts]);
 
   useEffect(() => {
     if (currentTab === 'swiping') {
@@ -103,29 +141,37 @@ export default function MainPage() {
     }
   }, [hasNextPage, fetchMore, isLoadingMore]);
 
+  const handleLike = useCallback((productId: string) => {
+    const product = allProducts.find(p => p.id === productId);
+    if (product) {
+      setLikedProducts(prev => {
+        // Check if product is already liked to avoid duplicates
+        if (prev.some(p => p.id === productId)) return prev;
+        return [...prev, product];
+      });
+    }
+  }, [allProducts]);
+
+// Handle product dislikes
+const handleDislike = useCallback((productId: string) => {
+  const product = allProducts.find(p => p.id === productId);
+  if (product) {
+    setDislikedProducts(prev => [...prev, product]);
+  }
+}, [allProducts]);
+
+  // Filter products for swiping (exclude already interacted with)
+  const swipingProducts = useMemo(() => {
+    return allProducts.filter(p => !excludedProductIds.has(p.id));
+  }, [allProducts, excludedProductIds]);
+
   const renderContent = () => {
     switch (currentTab) {
       case 'popular':
-        return (
-          <div className="px-4 pt-4">
-            <h2 className="text-xl font-bold text-white">Popular Products</h2>
-            <p className="text-white/70 mb-4">Trending items this week</p>
-            <div className="flex items-center justify-center h-64">
-              <p className="text-white/50">Popular products will appear here</p>
-            </div>
-          </div>
-        );
-      
+        return <PopularTab />;
+        
       case 'notInterested':
-        return (
-          <div className="px-4 pt-4">
-            <h2 className="text-xl font-bold text-white">Not Interested</h2>
-            <p className="text-white/70 mb-4">Items you've passed on</p>
-            <div className="flex items-center justify-center h-64">
-              <p className="text-white/50">Rejected products will appear here</p>
-            </div>
-          </div>
-        );
+        return <DislikeTab dislikedProducts={dislikedProducts} />;
       
       case 'swiping':
         return (
@@ -136,11 +182,11 @@ export default function MainPage() {
             </p>
             
             <SwipeTab 
-              products={allProducts}
+              products={swipingProducts}
               loading={loading && allProducts.length === 0}
               error={error}
-              onSwipeLeft={(productId) => console.log('Not interested:', productId)}
-              onSwipeRight={(productId) => console.log('Liked:', productId)}
+              onSwipeLeft={handleDislike}
+              onSwipeRight={handleLike}
               onEndReached={loadMoreProducts}
               isLoadingMore={isLoadingMore}
             />
@@ -148,54 +194,10 @@ export default function MainPage() {
         );
       
       case 'liked':
-        return (
-          <div className="px-4 pt-4">
-            <h2 className="text-xl font-bold text-white">Liked Products</h2>
-            <p className="text-white/70 mb-4">Items you've saved</p>
-            <div className="flex items-center justify-center h-64">
-              <p className="text-white/50">Liked products will appear here</p>
-            </div>
-          </div>
-        );
+        return <LikeTab likedProducts={likedProducts} />;
       
       case 'profile':
-        return (
-          <div className="px-4 pt-4">
-            <h2 className="text-xl font-bold text-white">Your Profile</h2>
-            <p className="text-white/70 mb-4">Manage your preferences</p>
-            
-            <div className="bg-white/10 rounded-xl p-6 mb-4">
-              <h3 className="font-semibold text-white mb-2">Gender</h3>
-              <p className="text-white/80">{gender || 'Not specified'}</p>
-            </div>
-            
-            <div className="bg-white/10 rounded-xl p-6">
-              <h3 className="font-semibold text-white mb-2">Interests</h3>
-              {categories.length > 0 ? (
-                <ul className="space-y-2">
-                  {categories.map((category) => (
-                    <li key={category} className="text-white/80">
-                      {category}
-                      {CATEGORY_MAPPING[category] && (
-                        <span className="text-white/50 text-xs block mt-1">
-                          ID: {CATEGORY_MAPPING[category]}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-white/50">No interests selected</p>
-              )}
-            </div>
-            <button 
-              onClick={clearProfileData} 
-              className="bg-red-500 hover:bg-red-600 transition-colors text-white px-4 py-2 rounded mt-4"
-            >
-              Reset Profile Data
-            </button>
-          </div>
-        );
+        return <ProfileTab />;
       
       default:
         return null;
