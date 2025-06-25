@@ -1,62 +1,73 @@
-import { useState, useEffect, useMemo } from 'react';
-import { ProductLink, useProducts } from '@shopify/shop-minis-react';
 import { Product } from '@shopify/shop-minis-react';
-import { useAsyncStorage } from '@shopify/shop-minis-react';
+import { RotateCcw, Heart, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface DislikeTabProps {
   dislikedProducts: Product[];
+  onReturnToSwiping: (productId: string) => void;
+  onMoveToLiked: (productId: string) => void;
+  onRemove: (productId: string) => void;
 }
 
-export function DislikeTab({ dislikedProducts }: DislikeTabProps) {
-  const { getItem } = useAsyncStorage();
-  const [localDislikedProducts, setLocalDislikedProducts] = useState<Product[]>([]);
-
-  // Get product IDs from disliked products
-  const productIds = useMemo(() => {
-    return dislikedProducts.map((p) => p.id);
-  }, [dislikedProducts]);
-
-  const { products, loading, error } = useProducts({ ids: productIds });
-
-  // Load disliked products from storage on mount
-  useEffect(() => {
-    const loadDislikedProducts = async () => {
-      try {
-        const disliked = await getItem({ key: 'dislikedProducts' });
-        if (disliked) {
-          setLocalDislikedProducts(JSON.parse(disliked));
-        }
-      } catch (error) {
-        console.error('Error loading disliked products:', error);
-      }
-    };
-
-    loadDislikedProducts();
-  }, []);
-
+export function DislikeTab({ 
+  dislikedProducts, 
+  onReturnToSwiping,
+  onMoveToLiked,
+}: DislikeTabProps) {
   return (
     <div className="px-4 pt-4">
-      <h2 className="text-xl font-bold text-white">Not Interested</h2>
-      <p className="text-white/70 mb-4">Items you've passed on</p>
+      <h2 className="text-xl font-bold text-white text-center">Not Interested</h2>
+      <p className="text-white/70 mb-4 text-center">Products you've passed on</p>
 
-      {loading && <p className="text-white/70">Loading disliked products...</p>}
-      {error && <p className="text-red-500">Error: {error.message}</p>}
-
-      <div className="grid grid-cols-2 gap-4">
-        {products && products.length > 0 ? (
-          products.map((product) => (
-            <div key={product.id} className="bg-white rounded-lg overflow-hidden">
-              <ProductLink product={product}/>
-            </div>
-          ))
-        ) : (
-          !loading && (
-            <div className="col-span-2 flex items-center justify-center h-64">
-              <p className="text-white/50">No disliked products yet</p>
-            </div>
-          )
-        )}
-      </div>
+      {dislikedProducts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-64">
+          <p className="text-white/50">No disliked products</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {dislikedProducts.map((product) => (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-between p-3 bg-white/10 border border-white/20 backdrop-blur-sm rounded-lg"
+            >
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                  {product.featuredImage && (
+                    <img
+                      src={product.featuredImage.url}
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-white font-medium truncate">{product.title}</p>
+                  <p className="text-white/70 text-sm">{product.price.amount}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onReturnToSwiping(product.id)}
+                  className="p-1 text-white/70 hover:text-blue-400"
+                  title="Return to swiping"
+                >
+                  <RotateCcw size={18} />
+                </button>
+                <button
+                  onClick={() => onMoveToLiked(product.id)}
+                  className="p-1 text-white/70 hover:text-green-400"
+                  title="Move to liked"
+                >
+                  <Heart size={18} />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
