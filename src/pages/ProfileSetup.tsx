@@ -52,8 +52,8 @@ export default function ProfileSetup({ onComplete }: Props) {
             </label>
             <div className="space-y-3">
               {[
-                { value: 'male', label: 'Male', icon: '👨' },
-                { value: 'female', label: 'Female', icon: '👩' }
+                { value: 'Male', label: 'Male', icon: '👨' },
+                { value: 'Female', label: 'Female', icon: '👩' }
               ].map((option) => (
                 <button
                   key={option.value}

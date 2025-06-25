@@ -1,6 +1,6 @@
 import { useAsyncStorage } from '@shopify/shop-minis-react';
 
-export function useProfileStorage() {
+export function useClearProfileStorage() {
   const { getItem, setItem, removeItem } = useAsyncStorage();
 
   const clearProfileData = async () => {
