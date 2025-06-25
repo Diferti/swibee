@@ -9,17 +9,19 @@
   },
   "dependencies": {
     "@shopify/shop-minis-react": "latest",
+    "framer-motion": "^12.19.1",
+    "lucide-react": "^0.523.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
+    "@shopify/shop-minis-cli": "latest-web",
     "@tailwindcss/vite": "^4.1.8",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
     "tailwindcss": "^4.1.8",
-    "typescript": "^5.8.3",
-    "@shopify/shop-minis-cli": "latest-web"
+    "typescript": "^5.8.3"
   },
   "resolutions": {
     "@apollo/federation": "0.38.1",
