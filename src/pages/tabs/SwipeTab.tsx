@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { HeartIcon, XIcon } from 'lucide-react';
-import type { Product } from '@shopify/shop-minis-react';
+import { Product, useShopNavigation } from '@shopify/shop-minis-react';
 
 interface SwipeTabProps {
   products: Product[];
@@ -28,7 +28,9 @@ export function SwipeTab({
   const endReachedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const {navigateToProduct}= useShopNavigation()
   const currentProduct = products[currentIndex];
+  
 
   // Prevent page scrolling when interacting with the card
   useEffect(() => {
@@ -224,7 +226,7 @@ export function SwipeTab({
                     </div>
                     
                     <button 
-                      onClick={()=>{}}
+                      onClick={() => navigateToProduct({ productId: currentProduct.id })}
                       className="text-sm text-highlight font-medium hover:text-highlight/50"
                     >
                       View Details
