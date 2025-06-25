@@ -130,9 +130,9 @@ export default function MainPage() {
       case 'swiping':
         return (
           <div className="px-4 pt-4">
-            <h2 className="text-xl font-bold text-white">Discover Products</h2>
-            <p className="text-white/70 mb-4">
-              {allProducts.length} products loaded • {hasNextPage ? 'More available' : 'End of results'}
+            <h2 className="text-xl font-bold text-white text-center">Swibee: Swipe with Vibe</h2>
+            <p className="text-white/70 mb-4 text-center">
+                Swipe. Shop. Smile.
             </p>
             
             <SwipeTab 
