@@ -1,5 +1,5 @@
 import { Product } from '@shopify/shop-minis-react';
-import { RotateCcw, Heart, Trash2 } from 'lucide-react';
+import { RotateCcw, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface DislikeTabProps {
