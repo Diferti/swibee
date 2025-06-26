@@ -111,8 +111,16 @@ export function ProfileTab() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center gap-4 mb-6 p-4 bg-white/10 border border-white/20 backdrop-blur-sm rounded-lg"
       >
-        <div className="w-16 h-16 rounded-full bg-highlight border border-white/50 flex items-center justify-center">
-          <User size={32} className="text-white" />
+        <div className="w-16 h-16 rounded-full bg-highlight border border-white/50 flex items-center justify-center overflow-hidden">
+          {currentUser?.avatarImage?.url ? (
+            <img 
+              src={currentUser.avatarImage.url} 
+              alt="User avatar"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User size={32} className="text-white" />
+          )}
         </div>
         <div>
           <h2 className="text-lg font-bold text-white">
