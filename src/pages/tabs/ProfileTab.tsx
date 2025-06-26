@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAsyncStorage, useCurrentUser } from '@shopify/shop-minis-react';
 import { useClearProfileStorage } from '../../hooks/clearProfileData';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trash2, Edit, X, Check, User } from 'lucide-react';
 
 const CATEGORY_OPTIONS = [
   { name: "Clothing", icon: "👕" },
@@ -31,6 +33,7 @@ export function ProfileTab() {
   const [categories, setCategories] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     const loadProfileData = async () => {
@@ -52,7 +55,11 @@ export function ProfileTab() {
     try {
       await setItem({ key: 'gender', value: gender });
       await setItem({ key: 'categories', value: JSON.stringify(categories) });
-      setIsEditing(false);
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        setIsEditing(false);
+      }, 1500);
     } catch (error) {
       console.error('Error saving profile:', error);
     } finally {
@@ -69,175 +76,289 @@ export function ProfileTab() {
   };
 
   return (
-    <div className="px-4 pt-4 pb-20">
-      {/* User Profile Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-semibold shrink-0">
-          {currentUser?.displayName?.charAt(0).toUpperCase() || 'U'}
-        </div>
+    <div className="px-4 pt-4 relative min-h-screen pb-20">
+      <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 className="text-xl font-bold text-white">
-            {currentUser?.displayName || 'Shop User'}
-          </h2>
-          <p className="text-white/70">Your Profile</p>
+          <h2 className="text-xl font-bold text-white">Profile Settings</h2>
+          <p className="text-white/70">Manage your preferences</p>
         </div>
+        <button 
+          onClick={() => setIsEditing(!isEditing)}
+          className="p-2 text-white hover:bg-white/10 rounded-full"
+        >
+          {isEditing ? <X size={24} /> : <Edit size={24} />}
+        </button>
       </div>
 
-      {userLoading && (
-        <div className="text-center py-8">
-          <p className="text-white/80">Loading user data...</p>
+      {/* Success Notification */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2"
+          >
+            <Check size={18} />
+            <span>Profile saved successfully!</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* User Profile Header */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-4 mb-6 p-4 bg-white/10 border border-white/20 backdrop-blur-sm rounded-lg"
+      >
+        <div className="w-16 h-16 rounded-full bg-highlight border border-white/50 flex items-center justify-center">
+          <User size={32} className="text-white" />
         </div>
+        <div>
+          <h2 className="text-lg font-bold text-white">
+            {currentUser?.displayName || 'Shop User'}
+          </h2>
+          <p className="text-white/70 text-sm">Your shopping profile</p>
+        </div>
+      </motion.div>
+
+      {userLoading && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex justify-center py-10"
+        >
+          <div className="w-12 h-12 rounded-full border-4 border-highlight/50 border-t-transparent animate-spin" />
+        </motion.div>
       )}
 
       {userError && (
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
-          <p className="text-red-300">Error loading user: {userError.message}</p>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-red-900/40 backdrop-blur-sm rounded-xl p-4 mb-6 border border-red-500/30"
+        >
+          <p className="text-red-200 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            Error loading user: {userError.message}
+          </p>
+        </motion.div>
       )}
 
-      {isEditing ? (
-        <div className="space-y-6">
-          {/* Gender Selection */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-            <label className="block text-sm font-semibold text-white mb-4">
-              What's your gender?
-            </label>
-            <div className="space-y-3">
-              {GENDER_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setGender(option.value)}
-                  className={`w-full flex items-center p-4 rounded-xl border-2 transition-all duration-200 ${
-                    gender === option.value
-                      ? 'border-white bg-highlight text-white'
-                      : 'border-white/30 bg-white/10 text-white hover:border-white/50'
-                  }`}
-                >
-                  <span className="text-xl mr-3">{option.icon}</span>
-                  <span className="font-medium">{option.label}</span>
-                  {gender === option.value && (
-                    <span className="ml-auto bg-highlight rounded-full p-1">
-                      <svg className="w-5 h-5 text-white border-2 border-white rounded-full" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Categories Selection */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-            <label className="block text-sm font-semibold text-white mb-4">
-              What interests you? (Select all that apply)
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {CATEGORY_OPTIONS.map((category) => (
-                <button
-                  key={category.name}
-                  onClick={() => toggleCategory(category.name)}
-                  className={`relative p-3 rounded-xl border-2 transition-all duration-200 flex items-center ${
-                    categories.includes(category.name)
-                      ? 'border-white bg-highlight text-white shadow-[0_0_0_4px_rgba(102,68,243,0.5)]'
-                      : 'border-white/30 bg-white/10 text-white hover:border-white/50'
-                  }`}
-                >
-                  <span className="text-xl mr-2 flex-shrink-0">{category.icon}</span>
-                  <span className="text-xs font-medium text-left flex-grow">{category.name}</span>
-                  {categories.includes(category.name) && (
-                    <div className="absolute -top-2 -right-2 bg-highlight rounded-full p-1 shadow-md z-10">
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => setIsEditing(false)}
-              className="flex-1 py-3 px-6 rounded-2xl font-medium border border-white/30 bg-transparent text-white hover:bg-white/10 transition-colors"
+      <AnimatePresence mode="wait">
+        {isEditing ? (
+          <motion.div
+            key="edit"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-4"
+          >
+            {/* Gender Selection */}
+            <motion.div 
+              className="bg-white/10 border border-white/20 backdrop-blur-sm rounded-lg p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
             >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={!gender || categories.length === 0 || isSaving}
-              className={`flex-1 py-3 px-6 rounded-2xl font-medium transition-all duration-200 ${
-                gender && categories.length > 0 && !isSaving
-                  ? 'bg-highlight text-white shadow-lg hover:shadow-xl hover:bg-highlight/90'
-                  : 'bg-white/20 text-white/50 cursor-not-allowed'
-              }`}
-            >
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* Profile Info Display */}
-          <div className="bg-white/10 rounded-xl p-6">
-            <h3 className="font-semibold text-white mb-4">Gender</h3>
-            <div className="flex items-center gap-3">
-              {gender ? (
-                <>
-                  <span className="text-xl">
-                    {GENDER_OPTIONS.find(g => g.value === gender)?.icon}
-                  </span>
-                  <p className="text-white/80">{gender}</p>
-                </>
-              ) : (
-                <p className="text-white/50">Not specified</p>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white/10 rounded-xl p-6">
-            <h3 className="font-semibold text-white mb-4">Interests</h3>
-            {categories.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => {
-                  const categoryInfo = CATEGORY_OPTIONS.find(c => c.name === category);
-                  return (
-                    <div
-                      key={category}
-                      className="flex items-center gap-2 bg-white/20 rounded-full px-3 py-1.5"
-                    >
-                      {categoryInfo?.icon && (
-                        <span className="text-sm">{categoryInfo.icon}</span>
-                      )}
-                      <span className="text-xs text-white/90">{category}</span>
+              <label className="block text-white font-medium mb-3">
+                Gender
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {GENDER_OPTIONS.map((option) => (
+                  <motion.button
+                    key={option.value}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setGender(option.value)}
+                    className={`py-2 px-1 border rounded-md text-sm ${
+                      gender === option.value
+                        ? 'border-white bg-highlight text-white' 
+                        : 'border-white/20 text-white/70 hover:border-white/40'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center">
+                      <span className="text-xl">{option.icon}</span>
+                      <span>{option.label}</span>
                     </div>
-                  );
-                })}
+                  </motion.button>
+                ))}
               </div>
-            ) : (
-              <p className="text-white/50">No interests selected</p>
-            )}
-          </div>
+            </motion.div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex-1 py-3 px-6 rounded-2xl font-medium border border-white/30 bg-transparent text-white hover:bg-white/10 transition-colors"
+            {/* Categories Selection */}
+            <motion.div 
+              className="bg-white/10 border border-white/20 backdrop-blur-sm rounded-lg p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
             >
-              Edit Profile
-            </button>
-            <button
-              onClick={clearProfileData}
-              className="flex-1 py-3 px-6 rounded-2xl font-medium bg-red-500/50 border border-red-500 text-white hover:bg-red-500/30 transition-colors"
+              <label className="block text-white font-medium mb-3">
+                Interests
+                <span className="block text-white/50 text-xs font-normal mt-1">
+                  Select all that apply
+                </span>
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {CATEGORY_OPTIONS.map((category) => (
+                  <motion.button
+                    key={category.name}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => toggleCategory(category.name)}
+                    className={`py-2 px-1 border rounded-md text-sm ${
+                      categories.includes(category.name)
+                        ? 'border-white bg-highlight text-white' 
+                        : 'border-white/20 text-white/70 hover:border-white/40'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center">
+                      <span className="text-xl">{category.icon}</span>
+                      <span className="text-xs mt-1">{category.name}</span>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Action Buttons */}
+            <motion.div 
+              className="flex gap-3 mt-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
             >
-              Delete Profile
-            </button>
-          </div>
-        </div>
-      )}
+              <button
+                onClick={() => setIsEditing(false)}
+                className="flex-1 py-3 rounded-md font-medium bg-red-500/10 text-red-500 border-1 border-red-500/80"
+              >
+                Cancel
+              </button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleSave}
+                disabled={isSaving}
+                className={`flex-1 py-3 rounded-md font-medium ${
+                  isSaving
+                    ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                    : 'bg-highlight text-white hover:bg-highlight border border-white'
+                }`}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="view"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-4"
+          >
+            {/* Profile Info Display */}
+            <motion.div 
+              className="bg-white/10 border border-white/20 backdrop-blur-sm rounded-lg p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-highlight border border-white/30 p-1.5 rounded-md">
+                  <User size={18} className="text-white" />
+                </div>
+                <h3 className="text-white font-medium">
+                  Gender
+                </h3>
+              </div>
+              <div className="flex items-center gap-3 mt-2">
+                {gender ? (
+                  <>
+                    <div className="w-10 h-10 rounded-md bg-highlight flex items-center justify-center">
+                      <span className="text-xl">
+                        {GENDER_OPTIONS.find(g => g.value === gender)?.icon}
+                      </span>
+                    </div>
+                    <p className="text-white/90">{gender}</p>
+                  </>
+                ) : (
+                  <p className="text-white/50 italic text-sm">Not specified</p>
+                )}
+              </div>
+            </motion.div>
+
+            <motion.div 
+              className="bg-white/10 border border-white/20 backdrop-blur-sm rounded-lg p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-highlight border border-white/30 p-1.5 rounded-md">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                </div>
+                <h3 className="text-white font-medium">
+                  Interests
+                  <span className="block text-white/70 text-xs font-normal">
+                    {categories.length} selected
+                  </span>
+                </h3>
+              </div>
+              
+              {categories.length > 0 ? (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {categories.map((category) => {
+                    const categoryInfo = CATEGORY_OPTIONS.find(c => c.name === category);
+                    return (
+                      <motion.div
+                        key={category}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center gap-1 bg-white/10 rounded-lg px-3 py-1.5 backdrop-blur-sm border border-white/10 text-sm"
+                      >
+                        {categoryInfo?.icon && (
+                          <span>{categoryInfo.icon}</span>
+                        )}
+                        <span className="text-white/90">{category}</span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-white/50 italic text-sm">No interests selected</p>
+              )}
+            </motion.div>
+
+            {/* Action Buttons */}
+            <motion.div 
+              className="flex gap-3 mt-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsEditing(true)}
+                className="flex-1 py-3 rounded-md font-medium bg-highlight text-white border border-white hover:bg-highlight/70"
+              >
+                Edit Profile
+              </motion.button>
+              <button
+                onClick={clearProfileData}
+                className="flex items-center justify-center gap-1 py-3 px-4 rounded-md font-medium bg-red-500/10 text-red-500 border-2 border-red-500/80"
+              >
+                <Trash2 size={18} />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

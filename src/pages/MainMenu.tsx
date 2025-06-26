@@ -165,13 +165,44 @@ const handleDislike = useCallback((productId: string) => {
     return allProducts.filter(p => !excludedProductIds.has(p.id));
   }, [allProducts, excludedProductIds]);
 
+  const handleMoveToLiked = useCallback((productId: string) => {
+    setDislikedProducts(prevDisliked => {
+      const product = prevDisliked.find(p => p.id === productId);
+      if (product) {
+        setLikedProducts(prevLiked => {
+          if (!prevLiked.some(p => p.id === productId)) {
+            return [...prevLiked, product];
+          }
+          return prevLiked;
+        });
+        return prevDisliked.filter(p => p.id !== productId);
+      }
+      return prevDisliked;
+    });
+  }, []);
+  
+  const handleReturnToSwiping = useCallback((productId: string) => {
+    setDislikedProducts(prev => prev.filter(p => p.id !== productId));
+  }, []);
+
+  const handleDeleteFromLiked = useCallback((productId: string) => {
+    setLikedProducts(prev => prev.filter(p => p.id !== productId));
+  }, []);
+
   const renderContent = () => {
     switch (currentTab) {
       case 'popular':
         return <PopularTab />;
         
-      case 'notInterested':
-        return <DislikeTab dislikedProducts={dislikedProducts} />;
+        case 'notInterested':
+            return (
+              <DislikeTab 
+                dislikedProducts={dislikedProducts}
+                onReturnToSwiping={handleReturnToSwiping}
+                onMoveToLiked={handleMoveToLiked}
+                onRemove={handleReturnToSwiping}
+              />
+            );
       
       case 'swiping':
         return (
@@ -193,8 +224,11 @@ const handleDislike = useCallback((productId: string) => {
           </div>
         );
       
-      case 'liked':
-        return <LikeTab likedProducts={likedProducts} />;
+        case 'liked':
+            return <LikeTab 
+              likedProducts={likedProducts} 
+              onDelete={handleDeleteFromLiked}
+            />;
       
       case 'profile':
         return <ProfileTab />;
