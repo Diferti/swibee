@@ -7,7 +7,7 @@
 **Team Name:** SoloLeveler
 
 **Participants:** 
-- @diferti
+- [@diferti](https://github.com/diferti)
 
 ## 🎯 Description
 
@@ -41,8 +41,8 @@ Swibee is an innovative Shop Mini that revolutionizes the shopping experience by
 
 ## 📹 Demo Video
 
-**Video URL:** [Demo Video Link - To be added]
-
+**Video URL:** [Demo Video Link](https://youtube.com/shorts/SfA-j2TMyzc)  
+**GitHub Repo:** [Repository Link](https://github.com/Diferti/swibee)
 <!-- 
 ⚠️ REMINDER: Please ensure your video is:
 - Publicly accessible (no login required)
@@ -113,8 +113,8 @@ The application follows a modern React architecture with:
 Please ensure you have:
 - [x] Provided a clear mini name and description
 - [x] Listed all team members
-- [ ] Included a **publicly accessible** video URL
-- [ ] Demonstrated your mini's key features in the video
+- [x] Included a **publicly accessible** video URL
+- [x] Demonstrated your mini's key features in the video
 - [x] Added the appropriate title prefix `[HACKATHON]`
 
 Thank you for your submission! 🎉 
